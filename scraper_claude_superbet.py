@@ -7,7 +7,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 import pandas as pd
-import json
 
 def scrape_betting_odds():
     # Set up Chrome options
@@ -220,7 +219,7 @@ def scrape_betting_odds():
                             if odds_2_elements:
                                 team2_odds = odds_2_elements[0].text
                         except Exception:
-                            pass
+                            pass 
                         
                         # Approach 2: More generic selectors
                         if team1_odds == "N/A" or draw_odds == "N/A" or team2_odds == "N/A":
