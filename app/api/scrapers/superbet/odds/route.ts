@@ -39,6 +39,8 @@ export async function POST(request: NextRequest) {
     const scriptPath = path.join(process.cwd(), "scripts", "scraper_cota_eveniment_superbet.py");
     const outputFile = path.join(process.cwd(), "odds_superbet.csv")
 
+    fs.writeFileSync(outputFile, "Data,team1,team2,odd_1,odd_X,odd_2\n", "utf8");
+
     // First, ensure Python dependencies are installed
     try {
       await execAsync(`python scripts/utils.py`)

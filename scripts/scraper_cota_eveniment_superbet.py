@@ -84,24 +84,46 @@ def scrape_odds(var1: str, var2: str, output_csv: str = 'odds_superbet.csv'):
                         "div.odd-offer__odd-button.e2e-odd-pick"
                     )
                     odds = {'1': None, 'X': None, '2': None}
-                    for btn in buttons:
-                        name = btn.find_element(
-                            By.CSS_SELECTOR,
-                            "span.odd-button__odd-name.e2e-odd-name"
-                        ).text.strip()
-                        value = btn.find_element(
-                            By.CSS_SELECTOR,
-                            "span.odd-button__odd-current-value.e2e-odd-current-value"
-                        ).text.strip()
-                        if name in odds:
-                            odds[name] = value
+                    try:
+                        for btn in buttons:
+                            try:
+                                name = btn.find_element(
+                                    By.CSS_SELECTOR,
+                                    "span.odd-button__odd-name.e2e-odd-name"
+                                ).text.strip()
+                                print(f"Found odd name: {name}")
+                                
+                                # Use the original selector that was working before
+                                value = btn.find_element(
+                                    By.CSS_SELECTOR,
+                                    "span.odd-button__odd-value-new.e2e-odd-current-value"
+                                ).text.strip()
+                                print(f"Found odd: {name} = {value}")
+                                        
+                                if name in odds:
+                                    odds[name] = value
+                            except Exception as e:
+                                print(f"Could not extract odd: {e}")
+                                continue
+                    except Exception as e:
+                        print(f"Error extracting odds: {e}")
 
-                    print(f"Found {team1} vs {team2} → 1: {odds['1']}, X: {odds['X']}, 2: {odds['2']}")
+                    print(f"Found {team1} vs {team2} ::: 1: {odds['1']}, X: {odds['X']}, 2: {odds['2']}")
                     writer.writerow([team1, team2, odds['1'], odds['X'], odds['2']])
     finally:
         driver.quit()
 
 
 if __name__ == "__main__":
-    # Exemplu de rulare
-    scrape_odds("Atletico Madrid","Rayo Vallecano", "real_vs_barca_odds.csv")
+    import sys
+    if len(sys.argv) >= 4:
+        # Use command line arguments
+        team1 = sys.argv[1]
+        team2 = sys.argv[2]
+        output_file = sys.argv[3]
+        print(f"Searching for: {team1} vs {team2}")
+        scrape_odds(team1, team2, output_file)
+    else:
+        # Fallback to example
+        print("Not enough arguments provided, using example values")
+        scrape_odds("Atletico Madrid", "Rayo Vallecano", "odds_superbet.csv")

@@ -25,6 +25,31 @@ export async function POST(request: NextRequest) {
 
     const { team1, team2 } = await request.json()
 
+    // Log we're using sample data instead of scraping
+    console.log(`MaxBet scraper disabled - returning sample data for ${team1} vs ${team2}`)
+
+    const maxbetOdds = [{
+      bookmaker: "MaxBet",
+      home_win: 2.25,
+      draw: 3.45,
+      away_win: 3.35,
+      updated_at: new Date().toISOString()
+    }];
+
+    console.log("=== Sample MaxBet Odds ===");
+    maxbetOdds.forEach(odd => {
+      console.log(`Home win: ${odd.home_win}`);
+      console.log(`Draw: ${odd.draw}`);
+      console.log(`Away win: ${odd.away_win}`);
+    });
+
+    // Return sample data with a note
+    return NextResponse.json({
+      success: true,
+      odds: maxbetOdds,
+      message: "Using sample data instead of running MaxBet scraper",
+    })
+
     if (!team1 || !team2) {
       return NextResponse.json(
         {
@@ -42,6 +67,8 @@ export async function POST(request: NextRequest) {
     // Execute the scraper directly
     const scriptPath = path.join(process.cwd(), "scripts", "scraper_cota_eveniment_maxbet.py");
     const outputFile = path.join(process.cwd(), "odds_maxbet.csv")
+
+    fs.writeFileSync(outputFile, "bookmaker,team1,team2,odd_1,odd_X,odd_2,updated_at\n", "utf8");
 
     // First, ensure Python dependencies are installed
     try {

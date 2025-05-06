@@ -25,6 +25,33 @@ export async function POST(request: NextRequest) {
 
     const { team1, team2 } = await request.json()
 
+    console.log(`Spin.ro scraper disabled - returning sample data for ${team1} vs ${team2}`)
+
+
+    const spinOdds = [{
+      bookmaker: "Spin.ro",
+      home_win: 2.30,
+      draw: 3.30,
+      away_win: 3.40,
+      updated_at: new Date().toISOString()
+    }];
+
+
+    console.log("=== Sample Spin.ro Odds ===");
+    spinOdds.forEach(odd => {
+      console.log(`Home win: ${odd.home_win}`);
+      console.log(`Draw: ${odd.draw}`);
+      console.log(`Away win: ${odd.away_win}`);
+    });
+
+    // Return sample data with a note
+    return NextResponse.json({
+      success: true,
+      odds: spinOdds,
+      message: "Using sample data instead of running Spin.ro scraper",
+    })
+
+
     if (!team1 || !team2) {
       return NextResponse.json(
         {
@@ -42,6 +69,8 @@ export async function POST(request: NextRequest) {
     // Execute the scraper directly
     const scriptPath = path.join(process.cwd(), "scripts", "script_cautare_meci_spin.py");
     const outputFile = path.join(process.cwd(), "odds_spin.csv")
+
+    fs.writeFileSync(outputFile, "Data,team1,team2,odd_1,odd_X,odd_2\n", "utf8");
 
     // First, ensure Python dependencies are installed
     try {

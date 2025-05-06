@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { exec } from "child_process"
 import { promisify } from "util"
+import { supabase } from "@/lib/supabase/client"
 import fs from "fs"
 import path from "path"
 import { parse } from "csv-parse/sync"
@@ -10,35 +11,74 @@ const execAsync = promisify(exec)
 
 export async function POST(request: NextRequest) {
   try {
+    const { team1, team2 } = await request.json()
 
+    if (!team1 || !team2) {
+      return NextResponse.json(
+        { error: "Both team1 and team2 parameters are required", success: false },
+        { status: 400 }
+      )
+    }
+
+    // Create empty CSV files with headers for each scraper
     const outputFiles = [
-      path.join(process.cwd(), "odds_superbet.csv"),
-      path.join(process.cwd(), "odds_maxbet.csv"),
-      path.join(process.cwd(), "odds_spin.csv"),
+      {
+        path: path.join(process.cwd(), "odds_superbet.csv"),
+        header: "bookmaker,team1,team2,odd_1,odd_X,odd_2,updated_at\n"
+      },
+      // {
+      //   path: path.join(process.cwd(), "odds_maxbet.csv"),
+      //   header: "Data,team1,team2,odd_1,odd_X,odd_2\n"
+      // },
+      // {
+      //   path: path.join(process.cwd(), "odds_spin.csv"),
+      //   header: "Data,team1,team2,odd_1,odd_X,odd_2\n"
+      // }
     ];
 
-    // Combined output file
-    const combinedFile = path.join(process.cwd(), "odds.csv");
-
-    // Create combined file with header
-    fs.writeFileSync(combinedFile, "Data,team1,team2,odd_1,odd_X,odd_2,bookmaker\n");
-
-    // Append data from each file with bookmaker info
-    outputFiles.forEach((file, index) => {
-      if (fs.existsSync(file)) {
-        const content = fs.readFileSync(file, "utf8");
-        const bookmaker = ["superbet", "maxbet", "spin"][index];
-
-        // Skip header line, add bookmaker column
-        const lines = content.split("\n").slice(1).filter(Boolean);
-        lines.forEach(line => {
-          fs.appendFileSync(combinedFile, `${line},${bookmaker}\n`);
-        });
-
-        // Delete the temporary file
-        fs.unlinkSync(file);
+    // Create all CSV files with headers
+    outputFiles.forEach(file => {
+      if (!fs.existsSync(file.path)) {
+        fs.writeFileSync(file.path, file.header, "utf8");
       }
     });
+
+    // Call all three odds scrapers sequentially
+    const endpoints = [
+      "/api/scrapers/superbet/odds",
+      "/api/scrapers/maxbet/odds",
+      "/api/scrapers/spin/odds"
+    ]
+
+
+    // const outputFiles = [
+    //   path.join(process.cwd(), "odds_superbet.csv"),
+    //   path.join(process.cwd(), "odds_maxbet.csv"),
+    //   path.join(process.cwd(), "odds_spin.csv"),
+    // ];
+
+    // // Combined output file
+    const combinedFile = path.join(process.cwd(), "odds.csv");
+
+    // // Create combined file with header
+    fs.writeFileSync(combinedFile, "Data,team1,team2,odd_1,odd_X,odd_2,bookmaker\n");
+
+    // // Append data from each file with bookmaker info
+    // outputFiles.forEach((file, index) => {
+    //   if (fs.existsSync(file)) {
+    //     const content = fs.readFileSync(file, "utf8");
+    //     const bookmaker = ["superbet", "maxbet", "spin"][index];
+
+    //     // Skip header line, add bookmaker column
+    //     const lines = content.split("\n").slice(1).filter(Boolean);
+    //     lines.forEach(line => {
+    //       fs.appendFileSync(combinedFile, `${line},${bookmaker}\n`);
+    //     });
+
+    //     // Delete the temporary file
+    //     fs.unlinkSync(file);
+    //   }
+    // });
 
     // Read the combined odds file
     let odds = [];

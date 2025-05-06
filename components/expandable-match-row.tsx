@@ -13,6 +13,8 @@ import { AlertCircle } from "lucide-react"
 import { SAMPLE_ODDS } from "@/lib/sample-data"
 import { KellyCalculator } from "@/components/kelly-calculator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { toast } from "@/components/ui/use-toast"
+
 
 interface Match {
   id?: string
@@ -55,12 +57,20 @@ export function ExpandableMatchRow({ match, isPreview = false }: ExpandableMatch
     try {
       setLoading(true)
       setError(null)
+      console.log("Seraching for ", match.team1, "vs", match.team2)
+
+      // toast({
+      //   title: "Searching odds for match:",
+      //   description: `${match.team1} vs ${match.team2}`,
+      //   duration: 3000,
+      // })
 
       // If we're in preview mode, just use sample data
       if (isPreview) {
         setOdds(SAMPLE_ODDS)
         return
       }
+
 
       // Call our new endpoint that runs all scrapers
       const response = await fetch("/api/odds/fetch-all", {
