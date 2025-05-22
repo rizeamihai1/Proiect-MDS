@@ -27,7 +27,6 @@ export async function POST(request: NextRequest) {
 
     console.log(`Spin.ro scraper disabled - returning sample data for ${team1} vs ${team2}`)
 
-
     const spinOdds = [{
       bookmaker: "Spin.ro",
       home_win: 2.30,
@@ -35,7 +34,6 @@ export async function POST(request: NextRequest) {
       away_win: 3.40,
       updated_at: new Date().toISOString()
     }];
-
 
     console.log("=== Sample Spin.ro Odds ===");
     spinOdds.forEach(odd => {
@@ -50,7 +48,6 @@ export async function POST(request: NextRequest) {
       odds: spinOdds,
       message: "Using sample data instead of running Spin.ro scraper",
     })
-
 
     if (!team1 || !team2) {
       return NextResponse.json(
