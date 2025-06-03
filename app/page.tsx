@@ -1,3 +1,4 @@
+// app/page.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -10,10 +11,20 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
-import { ExpandableMatchRow } from "@/components/expandable-match-row"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
+import TopBets from "@/components/bets/top-bets"
+import AuthNav from "@/components/auth/auth-nav"
 import { SAMPLE_MATCHES } from "@/lib/sample-data"
+
+// Import the ExpandableMatchRow component only if it exists
+let ExpandableMatchRow: any
+try {
+  ExpandableMatchRow = require("@/components/expandable-match-row").ExpandableMatchRow
+} catch (error) {
+  // Component doesn't exist, we'll handle this in the render
+  console.warn("ExpandableMatchRow component not found, using fallback")
+}
 
 interface Match {
   id: string
@@ -21,6 +32,28 @@ interface Match {
   team2: string
   match_date: string
   league: string
+}
+
+// Simple fallback component for ExpandableMatchRow
+function MatchRowFallback({ match }: { match: Match }) {
+  return (
+    <div className="p-4 border-b">
+      <div className="flex justify-between items-center">
+        <div>
+          <p className="font-medium">
+            {match.team1} vs {match.team2}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {new Date(match.match_date).toLocaleDateString()}{" "}
+            {new Date(match.match_date).toLocaleTimeString()}
+          </p>
+        </div>
+        <Button variant="outline" size="sm">
+          View Odds
+        </Button>
+      </div>
+    </div>
+  )
 }
 
 export default function Home() {
@@ -32,7 +65,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [isPreview, setIsPreview] = useState(false)
 
-  // Fetch matches with improved error handling
+  // Fetch matches with improved error handling from the old version
   const fetchMatches = async () => {
     try {
       setLoading(true)
@@ -75,7 +108,7 @@ export default function Home() {
     }
   }
 
-  // Refresh data manually with improved error handling
+  // Refresh data manually with improved error handling from the old version
   const refreshData = async () => {
     try {
       setRefreshing(true)
@@ -131,7 +164,9 @@ export default function Home() {
       match.team2?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       match.league?.toLowerCase().includes(searchQuery.toLowerCase())
 
-    const matchesLeague = activeLeague === "all" || match.league?.toLowerCase().includes(activeLeague.toLowerCase())
+    const matchesLeague =
+      activeLeague === "all" ||
+      match.league?.toLowerCase().includes(activeLeague.toLowerCase())
 
     return matchesSearch && matchesLeague
   })
@@ -146,11 +181,14 @@ export default function Home() {
       acc[league].push(match)
       return acc
     },
-    {} as Record<string, Match[]>,
+    {} as Record<string, Match[]>
   )
 
   // Get unique leagues for tabs
   const leagues = Object.keys(matchesByLeague).sort()
+
+  // Determine which component to use for rendering matches
+  const MatchComponent = ExpandableMatchRow || MatchRowFallback
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -179,11 +217,9 @@ export default function Home() {
                 <Link href="/tools/kelly-calculator">Kelly Calculator</Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link href="/auth/sign-in">Log in</Link>
+                <Link href="/predictions">Predicții</Link>
               </Button>
-              <Button asChild>
-                <Link href="/auth/sign-up">Sign up</Link>
-              </Button>
+              <AuthNav />
             </nav>
           </div>
         </div>
@@ -222,7 +258,7 @@ export default function Home() {
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 <p>You're viewing sample data in preview mode.</p>
-                <p className="mt-1 text-xs">In a production environment, this would connect to a real database.</p>
+                <p className="mt-1 text-xs">Could not connect to the API for live data.</p>
               </AlertDescription>
             </Alert>
           )}
@@ -233,6 +269,11 @@ export default function Home() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+        </section>
+
+        {/* Add the Top 5 Bets section from the new version */}
+        <section className="container py-8">
+          <TopBets />
         </section>
 
         <section className="container py-8">
@@ -282,7 +323,7 @@ export default function Home() {
                       <CardContent className="p-0">
                         <div className="divide-y">
                           {leagueMatches.map((match) => (
-                            <ExpandableMatchRow
+                            <MatchComponent
                               key={match.id || `${match.team1}-${match.team2}`}
                               match={match}
                               isPreview={isPreview}
@@ -308,14 +349,14 @@ export default function Home() {
                   <CardHeader>
                     <CardTitle>{league}</CardTitle>
                     <CardDescription>
-                      {matchesByLeague[league].length} {matchesByLeague[league].length === 1 ? "match" : "matches"}{" "}
-                      available
+                      {matchesByLeague[league].length}{" "}
+                      {matchesByLeague[league].length === 1 ? "match" : "matches"} available
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-0">
                     <div className="divide-y">
                       {matchesByLeague[league].map((match) => (
-                        <ExpandableMatchRow
+                        <MatchComponent
                           key={match.id || `${match.team1}-${match.team2}`}
                           match={match}
                           isPreview={isPreview}
@@ -348,5 +389,4 @@ export default function Home() {
         </div>
       </footer>
     </div>
-  )
-}
+)
