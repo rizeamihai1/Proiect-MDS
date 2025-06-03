@@ -453,24 +453,188 @@ useEffect(() => {
 4. **Verify**: Test all generated code thoroughly
 5. **Document**: Have AI explain complex logic
 
-### 7.2 Workflow Recommendations
+### 7.2 UML Diagram
 
 ```mermaid
-graph TD
-    A[Define Requirements] --> B[Choose AI Tool]
-    B --> C{Task Type?}
-    C -->|New Feature| D[v0.dev for Scaffolding]
-    C -->|Algorithm/Logic| E[Claude/ChatGPT]
-    C -->|Bug Fix/Polish| F[GitHub Copilot]
-    D --> G[Integration in VSCode]
-    E --> G
-    F --> G
-    G --> H[Test & Validate]
-    H --> I{Works?}
-    I -->|No| J[Refine with Copilot]
-    J --> H
-    I -->|Yes| K[Documentation]
-    K --> L[Deploy]
+classDiagram
+    %% Database Entities
+    class User {
+        +string id
+        +string email
+        +datetime created_at
+        +datetime updated_at
+        +signIn(email, password)
+        +signUp(email, password)
+        +signOut()
+    }
+
+    class UserPreferences {
+        +string id
+        +string user_id
+        +string[] favorite_teams
+        +string[] favorite_leagues
+        +string[] favorite_bookmakers
+        +datetime created_at
+        +datetime updated_at
+    }
+
+    class Match {
+        +string id
+        +string team1
+        +string team2
+        +datetime match_date
+        +string league
+        +datetime created_at
+        +datetime updated_at
+    }
+
+    class Odds {
+        +string id
+        +string match_id
+        +string bookmaker
+        +number home_win
+        +number draw
+        +number away_win
+        +datetime created_at
+        +datetime updated_at
+    }
+
+    class SavedBet {
+        +string id
+        +string user_id
+        +string match_id
+        +string bookmaker
+        +string bet_type
+        +number odds
+        +datetime created_at
+    }
+
+    %% API Services
+    class MatchService {
+        +getMatches()
+        +refreshMatches()
+        +getMatchById(id)
+        +searchMatches(query)
+    }
+
+    class OddsService {
+        +getOddsByMatchId(matchId)
+        +fetchAllOdds(team1, team2)
+        +compareOdds(matchId)
+        +saveBet(userId, matchId, bet)
+    }
+
+    class ScraperService {
+        +scrapeSuperbetMatches()
+        +scrapeSuperbetOdds(team1, team2)
+        +scrapeMaxBetMatches()
+        +scrapeMaxBetOdds(team1, team2)
+        +scrapeSpinOdds(team1, team2)
+    }
+
+    %% Frontend Components
+    class AuthProvider {
+        -User user
+        -Session session
+        -boolean isLoading
+        +signIn(email, password)
+        +signUp(email, password)
+        +signOut()
+    }
+
+    class RefreshProvider {
+        -Date lastRefreshed
+        -boolean isRefreshing
+        -boolean autoRefreshEnabled
+        -number secondsUntilRefresh
+        +refreshData()
+        +setAutoRefreshEnabled(enabled)
+    }
+
+    class MatchOddsTable {
+        -string matchId
+        -string team1
+        -string team2
+        +displayOdds()
+        +saveBet(bookmaker, betType, odds)
+        +highlightBestOdds()
+    }
+
+    class KellyCalculator {
+        +calculateArbitrageBets(odds, amount)
+        +findBestArbitrageOpportunity(odds)
+        -calculateKellyPercentage(odds)
+        -validateArbitrage(probabilities)
+    }
+
+    %% Python Scrapers
+    class SuperbetScraper {
+        -webdriver driver
+        +scrapeMatches()
+        +scrapeOdds(team1, team2)
+        +parseMatchDateTime(dateStr)
+        -acceptCookies()
+        -closeModal()
+    }
+
+    class MaxBetScraper {
+        -webdriver driver
+        +scrapeAllMatches()
+        +scrapeOdds(date, team1, team2)
+        -scrollToBottom()
+        -extractOdds(element)
+    }
+
+    class SpinScraper {
+        -webdriver driver
+        +searchMatch(team1, team2)
+        +scrapeOdds(team1, team2, date)
+        -typeWithDelay(text)
+        -parseOdds(element)
+    }
+
+    %% Database Client
+    class SupabaseClient {
+        -string url
+        -string anonKey
+        +auth()
+        +from(table)
+        +realtime()
+    }
+
+    %% Relationships - Database
+    User "1" --> "0..1" UserPreferences : has
+    User "1" --> "0..*" SavedBet : saves
+    Match "1" --> "0..*" Odds : has
+    Match "1" --> "0..*" SavedBet : referenced in
+    SavedBet "*" --> "1" User : belongs to
+    SavedBet "*" --> "1" Match : references
+    
+    %% Relationships - Services
+    MatchService ..> Match : manages
+    MatchService ..> SupabaseClient : uses
+    OddsService ..> Odds : manages
+    OddsService ..> SupabaseClient : uses
+    OddsService ..> ScraperService : triggers
+    ScraperService ..> SuperbetScraper : coordinates
+    ScraperService ..> MaxBetScraper : coordinates
+    ScraperService ..> SpinScraper : coordinates
+    
+    %% Relationships - Frontend
+    AuthProvider ..> User : authenticates
+    AuthProvider ..> SupabaseClient : uses
+    RefreshProvider ..> MatchService : refreshes
+    RefreshProvider ..> OddsService : refreshes
+    MatchOddsTable ..> OddsService : displays
+    MatchOddsTable ..> SavedBet : creates
+    KellyCalculator ..> Odds : analyzes
+    
+    %% Relationships - Scrapers
+    SuperbetScraper ..> MatchService : provides data
+    SuperbetScraper ..> OddsService : provides data
+    MaxBetScraper ..> MatchService : provides data
+    MaxBetScraper ..> OddsService : provides data
+    SpinScraper ..> OddsService : provides data
 ```
 
 ### 7.3 Code Review Process
@@ -581,3 +745,6 @@ How can I make it more robust?
 *Document Version: 1.0*  
 *Last Updated: June 2025*  
 *Author: Popa Petru, Rizea Mihai, Ungureanu Rares, Albu Victor*
+
+
+
