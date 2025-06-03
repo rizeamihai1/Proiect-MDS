@@ -9,8 +9,7 @@ This document details the comprehensive use of AI tools in developing a Football
 
 ## 1. Project Overview
 
-**Project**: Football Betting Odds Comparison System  
-**Development Period**: 2024-2025  
+**Project**: Football Betting Odds Comparison System   
 **Tech Stack**: Next.js, React, TypeScript, Python, Selenium, Supabase  
 **Target Market**: Romanian betting market (Superbet, MaxBet, Spin.ro)
 
@@ -580,5 +579,5 @@ How can I make it more robust?
 ---
 
 *Document Version: 1.0*  
-*Last Updated: January 2025*  
-*Author: Development Team*
+*Last Updated: June 2025*  
+*Author: Popa Petru, Rizea Mihai, Ungureanu Rares, Albu Victor*
