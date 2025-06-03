@@ -1,4 +1,5 @@
- import { NextResponse } from 'next/server';
+
+import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -19,4 +20,3 @@ export async function GET() {
 
   return NextResponse.json(data);
 }
- 

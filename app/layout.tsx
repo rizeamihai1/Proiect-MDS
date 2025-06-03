@@ -1,8 +1,5 @@
 import type React from "react"
 import { AuthProvider } from "@/contexts/auth-context"
-import { RefreshProvider } from "@/contexts/refresh-context"
-import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
 export default function RootLayout({
@@ -11,21 +8,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <AuthProvider>
-            <RefreshProvider>
-              {children}
-              <Toaster />
-            </RefreshProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <AuthProvider>
+          {/* Your existing layout content */}
+          {children}
+        </AuthProvider>
       </body>
     </html>
   )
 }
-
-export const metadata = {
-      generator: 'v0.dev'
-    };
