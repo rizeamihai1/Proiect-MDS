@@ -142,6 +142,52 @@ export interface Database {
           created_at?: string
         }
       }
+      scraped_matches: {
+        Row: {
+          id: string
+          team1: string
+          team2: string
+          match_date: string
+          league: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          team1: string
+          team2: string
+          match_date: string
+          league?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          team1?: string
+          team2?: string
+          match_date?: string
+          league?: string
+          created_at?: string
+        }
+      }
+      scraper_metadata: {
+        Row: {
+          id: string
+          last_updated: string
+          match_count: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          last_updated: string
+          match_count: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          last_updated?: string
+          match_count?: number
+          created_at?: string
+        }
+      }
     }
   }
 }

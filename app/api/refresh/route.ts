@@ -1,34 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { SAMPLE_MATCHES } from "@/lib/sample-data"
 import { exec } from "child_process"
 import { promisify } from "util"
 import fs from "fs"
 import path from "path"
 import { parse } from "csv-parse/sync"
+import { supabase } from "@/lib/supabase/client"
 
 const execAsync = promisify(exec)
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if we're in preview mode
-    const isPreview = process.env.VERCEL_ENV === "preview" || !process.env.POSTGRES_URL
-
-    // In preview mode, just return sample data
-    if (isPreview) {
-      return NextResponse.json({
-        success: true,
-        isPreview: true,
-        message: "Data refreshed with sample data",
-        matches: SAMPLE_MATCHES,
-        note: "Using sample data for preview. In production, this would refresh from real data sources.",
-      })
-    }
-
-    // Execute the Superbet scraper directly
+    // Execute the Superbet scraper
     const scriptPath = path.join(process.cwd(), "scripts/scraper_pagina_principala+date_scaper.py")
     const outputFile = path.join(process.cwd(), "all_football_matches.csv")
 
-    // First, ensure Python dependencies are installed
+    // Ensure Python dependencies are installed
     try {
       await execAsync(`python scripts/utils.py`)
     } catch (error) {
@@ -36,34 +22,41 @@ export async function POST(request: NextRequest) {
     }
 
     // Run the scraper
-    console.log("Refreshing data with Superbet scraper")
-    const { stdout, stderr } = await execAsync(`python ${scriptPath}`)
+    console.log("Running Superbet scraper...")
+    try {
+      const { stdout, stderr } = await execAsync(`python "${scriptPath}"`)
 
-    if (stderr) {
-      console.error(`Scraper error: ${stderr}`)
-    }
-
-    if (stdout) {
-      console.log(`Scraper output: ${stdout}`)
+      if (stdout) console.log("Scraper output:", stdout)
+      if (stderr) console.error("Scraper stderr:", stderr)
+    } catch (error) {
+      console.error("Scraper execution error:", error)
+      throw new Error("Failed to execute scraper")
     }
 
     // Process the CSV output
     let matches = []
     if (fs.existsSync(outputFile)) {
       const content = fs.readFileSync(outputFile, "utf8")
-      matches = parse(content, { columns: true })
+      const csvResults = parse(content, { columns: true })
+
+      // Take only the first 100 matches
+      matches = csvResults.slice(0, 100).map((match: any) => ({
+        team1: match.team1,
+        team2: match.team2,
+        match_date: match.date,
+        league: match.league || "Unknown"
+      }))
 
       // Clean up the file
       fs.unlinkSync(outputFile)
+
+      console.log(`Scraped ${matches.length} matches`)
     } else {
-      console.warn(`Output file not found: ${outputFile}`)
-      // Fall back to sample data if scraper fails
-      return NextResponse.json({
-        success: false,
-        matches: SAMPLE_MATCHES,
-        message: "Failed to refresh data, using sample data",
-      })
+      throw new Error("Scraper did not generate output file")
     }
+
+    // Update database
+    await updateDatabase(matches)
 
     return NextResponse.json({
       success: true,
@@ -71,13 +64,63 @@ export async function POST(request: NextRequest) {
       message: `Successfully refreshed data. Found ${matches.length} matches.`,
     })
   } catch (error: any) {
-    console.error("API error:", error)
-    // Fall back to sample data if there's an error
+    console.error("Refresh API error:", error)
     return NextResponse.json({
       success: false,
-      matches: SAMPLE_MATCHES,
       error: error.message || "Failed to refresh data",
-      message: "Error occurred, using sample data",
-    })
+      message: error.message
+    }, { status: 500 })
   }
+}
+
+async function updateDatabase(matches: any[]) {
+  // Clear existing matches
+  const { error: deleteError } = await supabase
+    .from("scraped_matches")
+    .delete()
+    .not("id", "is", null)
+
+  if (deleteError) {
+    console.error("Delete error:", deleteError)
+    throw deleteError
+  }
+
+  // Insert new matches with proper date formatting
+  const matchesToInsert = matches.map(match => {
+    // Parse date from DD/MM/YYYY HH:MM to YYYY-MM-DD HH:MM:SS
+    const [datePart, timePart] = match.match_date.split(' ')
+    const [day, month, year] = datePart.split('/')
+    const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}:00`
+
+    return {
+      team1: match.team1,
+      team2: match.team2,
+      match_date: formattedDate,
+      league: match.league
+    }
+  })
+
+  const { error: insertError } = await supabase
+    .from("scraped_matches")
+    .insert(matchesToInsert)
+
+  if (insertError) {
+    console.error("Insert error:", insertError)
+    throw insertError
+  }
+
+  // Update metadata
+  const { error: metadataError } = await supabase
+    .from("scraper_metadata")
+    .insert({
+      last_updated: new Date().toISOString(),
+      match_count: matches.length
+    })
+
+  if (metadataError) {
+    console.error("Metadata error:", metadataError)
+    throw metadataError
+  }
+
+  console.log(`Database updated with ${matches.length} matches`)
 }

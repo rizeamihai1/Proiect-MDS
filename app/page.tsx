@@ -64,6 +64,7 @@ export default function Home() {
   const [activeLeague, setActiveLeague] = useState("all")
   const [error, setError] = useState<string | null>(null)
   const [isPreview, setIsPreview] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null)
 
   // Fetch matches with improved error handling from the old version
   const fetchMatches = async () => {
@@ -71,38 +72,24 @@ export default function Home() {
       setLoading(true)
       setError(null)
 
-      // First try to get matches from the API
-      try {
-        const response = await fetch("/api/matches")
-
-        // Check if the response is OK and contains JSON
-        if (!response.ok) {
-          throw new Error(`API returned status ${response.status}`)
-        }
-
-        // Try to parse the JSON
-        const data = await response.json()
-
-        // Check if we're in preview mode
-        if (data.isPreview) {
-          setIsPreview(true)
-        }
-
-        // Set the matches
-        setMatches(data.matches || SAMPLE_MATCHES)
-      } catch (apiError) {
-        console.error("API error:", apiError)
-        // Fall back to sample data
-        setMatches(SAMPLE_MATCHES)
-        setIsPreview(true)
-        setError("Could not fetch live data. Using sample data instead.")
+      const response = await fetch("/api/matches")
+      if (!response.ok) {
+        throw new Error(`API returned status ${response.status}`)
       }
-    } catch (error) {
-      console.error("Error in fetchMatches:", error)
-      // Ultimate fallback
+
+      const data = await response.json()
+
+      if (data.isPreview) {
+        setIsPreview(true)
+      }
+
+      setMatches(data.matches || SAMPLE_MATCHES)
+      setLastUpdated(data.lastUpdated)
+    } catch (apiError) {
+      console.error("API error:", apiError)
       setMatches(SAMPLE_MATCHES)
       setIsPreview(true)
-      setError("An unexpected error occurred. Using sample data.")
+      setError("Could not fetch live data. Using sample data instead.")
     } finally {
       setLoading(false)
     }
@@ -114,39 +101,29 @@ export default function Home() {
       setRefreshing(true)
       setError(null)
 
-      try {
-        const response = await fetch("/api/refresh", {
-          method: "POST",
-        })
+      const response = await fetch("/api/refresh", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({})
+      })
 
-        // Check if the response is OK
-        if (!response.ok) {
-          throw new Error(`API returned status ${response.status}`)
-        }
+      const data = await response.json()
 
-        // Try to parse the JSON
-        const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to refresh data")
+      }
 
-        // Check if we're in preview mode
-        if (data.isPreview) {
-          setIsPreview(true)
-        }
-
-        // Set the matches
-        setMatches(data.matches || SAMPLE_MATCHES)
-      } catch (apiError) {
-        console.error("API error during refresh:", apiError)
-        // Fall back to sample data
-        setMatches(SAMPLE_MATCHES)
-        setIsPreview(true)
-        setError("Could not refresh data. Using sample data instead.")
+      if (data.success && data.matches) {
+        setMatches(data.matches)
+        setLastUpdated(new Date().toISOString())
+      } else {
+        throw new Error(data.message || "No matches returned")
       }
     } catch (error) {
-      console.error("Error in refreshData:", error)
-      // Ultimate fallback
-      setMatches(SAMPLE_MATCHES)
-      setIsPreview(true)
-      setError("An unexpected error occurred during refresh. Using sample data.")
+      console.error("Error refreshing data:", error)
+      setError(error instanceof Error ? error.message : "Failed to refresh data")
     } finally {
       setRefreshing(false)
     }
@@ -246,7 +223,12 @@ export default function Home() {
               Spin.ro
             </Badge>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
+            {lastUpdated && (
+              <span className="text-sm text-muted-foreground">
+                Last updated: {new Date(lastUpdated).toLocaleString()}
+              </span>
+            )}
             <Button onClick={refreshData} disabled={refreshing} className="gap-2">
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
               {refreshing ? "Refreshing..." : "Refresh Odds"}
@@ -389,4 +371,4 @@ export default function Home() {
         </div>
       </footer>
     </div>
-)
+  )
