@@ -10,8 +10,11 @@ const execAsync = promisify(exec)
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if we're in preview mode
-    const isPreview = process.env.VERCEL_ENV === "preview" || !process.env.POSTGRES_URL
+    // Either remove this check entirely or modify it to allow scraping in development
+    // const isPreview = process.env.VERCEL_ENV === "preview" || !process.env.POSTGRES_URL
+
+    // Instead, use this explicit check that will only trigger in Vercel preview deployments
+    const isPreview = process.env.VERCEL_ENV === "preview"
 
     // In preview mode, just return sample data
     if (isPreview) {

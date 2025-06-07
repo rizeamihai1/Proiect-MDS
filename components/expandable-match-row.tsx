@@ -192,7 +192,7 @@ export function ExpandableMatchRow({ match, isPreview = false }: ExpandableMatch
                   </TableHeader>
                   <TableBody>
                     {odds.map((odd, index) => (
-                      <TableRow key={odd.bookmaker || `odd-${index}`}>
+                      <TableRow key={`${odd.bookmaker}-${index}`}>
                         <TableCell className="font-medium">{odd.bookmaker}</TableCell>
                         <TableCell>
                           <div
