@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
         )
 
         console.log("Superbet response data:", results[0]?.odds); // Log the superbet results
+        console.log("MaxBet response data:", results[1]?.odds); // Also log the MaxBet results
 
         // Get existing odds for this match from database
         const { data: existingOdds } = await supabase
@@ -87,7 +88,25 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Add placeholder data for MaxBet and Spin.ro
+        // Check if we have any real data from MaxBet
+        const maxbetResult = results[1];
+        console.log("Processing MaxBet data:", maxbetResult);
+
+        if (maxbetResult && Array.isArray(maxbetResult.odds)) {
+            // Handle MaxBet data
+            const maxbetOdd = maxbetResult.odds[0];
+            if (maxbetOdd) {
+                bookmakerMap.set("MaxBet", {
+                    bookmaker: "MaxBet",
+                    home_win: parseFloat(String(maxbetOdd.odd_1 || 0)),
+                    draw: parseFloat(String(maxbetOdd.odd_X || 0)),
+                    away_win: parseFloat(String(maxbetOdd.odd_2 || 0)),
+                    updated_at: new Date().toISOString()
+                });
+            }
+        }
+
+        // Add placeholder data for MaxBet and Spin.ro if not present
         if (!bookmakerMap.has("MaxBet")) {
             bookmakerMap.set("MaxBet", {
                 bookmaker: "MaxBet",

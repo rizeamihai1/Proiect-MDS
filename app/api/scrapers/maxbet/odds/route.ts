@@ -10,8 +10,8 @@ const execAsync = promisify(exec)
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if we're in preview mode
-    const isPreview = process.env.VERCEL_ENV === "preview" || !process.env.POSTGRES_URL
+    // Either use this explicit check that will only trigger in Vercel preview deployments
+    const isPreview = process.env.VERCEL_ENV === "preview";
 
     // In preview mode, just return sample data
     if (isPreview) {
@@ -25,9 +25,8 @@ export async function POST(request: NextRequest) {
 
     const { team1, team2 } = await request.json()
 
-    // Log we're using sample data instead of scraping
+    /* Comment out or remove this early return with sample data
     console.log(`MaxBet scraper disabled - returning sample data for ${team1} vs ${team2}`)
-
     const maxbetOdds = [{
       bookmaker: "MaxBet",
       home_win: 2.25,
@@ -35,20 +34,18 @@ export async function POST(request: NextRequest) {
       away_win: 3.35,
       updated_at: new Date().toISOString()
     }];
-
     console.log("=== Sample MaxBet Odds ===");
     maxbetOdds.forEach(odd => {
       console.log(`Home win: ${odd.home_win}`);
       console.log(`Draw: ${odd.draw}`);
       console.log(`Away win: ${odd.away_win}`);
     });
-
-    // Return sample data with a note
     return NextResponse.json({
       success: true,
       odds: maxbetOdds,
       message: "Using sample data instead of running MaxBet scraper",
     })
+    */
 
     if (!team1 || !team2) {
       return NextResponse.json(
